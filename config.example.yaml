@@ -1,0 +1,20 @@
+# 生产示例：按实际 k8s Service 名与公网域名修改。
+key_config:
+  env: production
+  port: 8000
+  name: "bossjob-mcp-server"
+map_config:
+  oauth:
+    issuer: "https://auth.bossjob.com"
+    jobseeker_resource: "https://mcp.bossjob.com/jobseeker/mcp"
+    jwks_refresh_interval: 1m
+    clock_skew: 30s
+  grpc:
+    job: "<job-go service>:9000"
+    jobseeker: "<jobseeker-go service>:9000"
+    config: "<config-go service>:9000"
+    timeout: 5s
+  mcp:
+    jobseeker_path: "/jobseeker/mcp"
+    allowed_hosts: ["mcp.bossjob.com"]
+    web_base_url: "https://bossjob.com"

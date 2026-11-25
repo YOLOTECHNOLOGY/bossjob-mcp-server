@@ -1,0 +1,6 @@
+c.out
+/main
+*.log
+.DS_Store
+local_config.yaml
+!tests/local_config.yaml

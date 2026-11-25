@@ -1,0 +1,18 @@
+key_config:
+  env: local
+  port: 8000
+  name: "bossjob-mcp-server"
+map_config:
+  oauth:
+    issuer: "https://dev.auth.bossjob.com"
+    jobseeker_resource: "https://dev.mcp.bossjob.com/jobseeker/mcp"
+    jwks_refresh_interval: 1m
+    clock_skew: 30s
+  grpc:
+    job: "127.0.0.1:19001"
+    jobseeker: "127.0.0.1:19002"
+    config: "127.0.0.1:19003"
+    timeout: 5s
+  mcp:
+    jobseeker_path: "/jobseeker/mcp"
+    web_base_url: "https://dev.bossjob.com"

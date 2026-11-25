@@ -1,0 +1,21 @@
+key_config:
+  env: development
+  port: 8000
+  name: "bossjob-mcp-server"
+map_config:
+  oauth:
+    # dev auth-go OAuth issuer；JWKS 默认 {issuer}/.well-known/jwks.json
+    issuer: "https://dev.auth.bossjob.com"
+    # 必须与 auth-go clients[].bindings.resource 完全一致
+    jobseeker_resource: "https://dev.mcp.bossjob.com/jobseeker/mcp"
+    jwks_refresh_interval: 1m
+    clock_skew: 30s
+  grpc:
+    job: "d-job-go.dev.svc.cluster.local:9000"
+    jobseeker: "d-jobseeker-go.dev.svc.cluster.local:9000"
+    config: "d-config-go.dev.svc.cluster.local:9000"
+    timeout: 5s
+  mcp:
+    jobseeker_path: "/jobseeker/mcp"
+    allowed_hosts: ["dev.mcp.bossjob.com"]
+    web_base_url: "https://dev.bossjob.com"
