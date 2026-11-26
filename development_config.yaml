@@ -18,4 +18,4 @@ map_config:
   mcp:
     jobseeker_path: "/jobseeker/mcp"
     allowed_hosts: ["dev.mcp.bossjob.com"]
-    web_base_url: "https://dev.bossjob.com"
+    web_base_url: "https://demo.bossjob.com/en-us/"

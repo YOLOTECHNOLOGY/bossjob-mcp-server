@@ -41,7 +41,7 @@ ChatGPT ──Bearer JWT──▶ /jobseeker/mcp (oauthrs 中间件 ➔ mcp-go S
 | `map_config.oauth.jobseeker_resource` | 与 auth-go `clients[].bindings.resource` 完全一致，其 path 必须等于 `mcp.jobseeker_path` |
 | `map_config.grpc.{job,jobseeker,config}` | 下游 gRPC 地址（:9000） |
 | `map_config.mcp.allowed_hosts` | DNS rebinding 防护的 Host 白名单 |
-| `map_config.mcp.web_base_url` | 相对 `job_url` / `company_url` 的站点根地址 |
+| `map_config.mcp.web_base_url` | 相对 `job_url` / `company_url` 的站点根地址，可带路径前缀（dev：`https://demo.bossjob.com/en-us/`） |
 
 ## 运行与测试
 

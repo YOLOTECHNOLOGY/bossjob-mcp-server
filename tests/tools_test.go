@@ -86,8 +86,8 @@ func TestCI_JobseekerMcp_SearchJobs(t *testing.T) {
 			convey.So(j.Salary.DisplayText, convey.ShouldEqual, "S$5K - S$8K / month")
 			convey.So(j.WorkArrangement, convey.ShouldEqual, openv1.WorkArrangement_WORK_ARRANGEMENT_HYBRID)
 			convey.So(j.Skills, convey.ShouldResemble, []string{"Go", "gRPC"})
-			convey.So(j.JobUrl, convey.ShouldEqual, "https://dev.bossjob.com/job/golang-engineer-1")
-			convey.So(j.Company.CompanyUrl, convey.ShouldEqual, "https://dev.bossjob.com/company/acme-9")
+			convey.So(j.JobUrl, convey.ShouldEqual, "https://demo.bossjob.com/en-us/job/golang-engineer-1")
+			convey.So(j.Company.CompanyUrl, convey.ShouldEqual, "https://demo.bossjob.com/en-us/company/acme-9")
 			convey.So(text, convey.ShouldNotContainSubstring, "rita@acme.test")
 
 			mockey.PatchConvey("Scenario: next_page_token 翻到第 2 页", func() {

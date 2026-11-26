@@ -15,4 +15,4 @@ map_config:
     timeout: 5s
   mcp:
     jobseeker_path: "/jobseeker/mcp"
-    web_base_url: "https://dev.bossjob.com"
+    web_base_url: "https://demo.bossjob.com/en-us/"
