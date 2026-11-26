@@ -56,7 +56,7 @@ func (r *configResolver) dictionary(ctx context.Context) (*structpb.Struct, erro
 	if !ok {
 		return &structpb.Struct{}, nil
 	}
-	key := strings.ToLower(st.Code)
+	key := st.Key
 	r.mu.Lock()
 	entry, ok := r.cache[key]
 	r.mu.Unlock()

@@ -375,3 +375,21 @@ func TestCI_JobseekerMcp_TokenCountry(t *testing.T) {
 		convey.So(cc.req.(*configv3.GetCountryConfigRequest).LanguageCode, convey.ShouldEqual, "en")
 	})
 }
+
+func TestCI_JobseekerMcp_OthersSite(t *testing.T) {
+	mockey.PatchConvey("Feature: Token 站点为 Others(241) 时使用全球站字典", t, func() {
+		e := newEnv(t)
+		cli := e.client(t, signToken(t, jwt.MapClaims{"country_id": 241}))
+		e.rec.set("SearchJobs", &jobv3.SearchJobsResponse{}, nil)
+		res, _ := callTool(t, cli, "search_jobs", map[string]any{"experience_levels": []any{"1 - 3 Yrs"}}, nil)
+		convey.So(res.IsError, convey.ShouldBeFalse)
+		c, _ := e.rec.last("SearchJobs")
+		assertJobseekerCtx(c, 241)
+		cc, _ := e.rec.last("GetCountryConfig")
+		convey.So(cc.req.(*configv3.GetCountryConfigRequest).CountryKey, convey.ShouldEqual, "com")
+		mockey.PatchConvey("Scenario: MO 不在 jobseeker-web 站点列表中，country_code=MO 被拒绝", func() {
+			res, _ := callTool(t, cli, "search_jobs", map[string]any{"country_code": "MO"}, nil)
+			convey.So(res.IsError, convey.ShouldBeTrue)
+		})
+	})
+}

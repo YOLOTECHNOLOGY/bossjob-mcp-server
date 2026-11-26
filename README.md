@@ -29,7 +29,7 @@ ChatGPT ──Bearer JWT──▶ /jobseeker/mcp (oauthrs 中间件 ➔ mcp-go S
 - 校验：签名 + kid、`iss`、`aud = jobseeker_resource`、`exp`（必填）/`iat`/`nbf`、`scope` 含 `mcp:access`、`role = jobseeker`、`uid` 为正整数。
 - 失败：401 `WWW-Authenticate: Bearer resource_metadata="<origin>/.well-known/oauth-protected-resource/jobseeker/mcp"`；缺 scope 为 403 `insufficient_scope`。
 - RFC 9728 元数据：`GET /.well-known/oauth-protected-resource/jobseeker/mcp`（`authorization_servers = [issuer]`）。
-- 下游 CtxInfo：`UserID = uid`、`CountryID = country_id`（缺失回退 167）、`RoleID` 由 `role` 解析、`LanguageID = 1`（英语）、`SiteID = 1`、`DeviceType = mcp`，**不传 SID**。工具参数 `country_code` 仅切换本次调用的站点。
+- 下游 CtxInfo：`UserID = uid`、`CountryID = country_id`（用户在 auth-go 登录页选择的站点，选项与 jobseeker-web 一致；缺失回退 167）、`RoleID` 由 `role` 解析、`LanguageID = 1`（英语）、`SiteID = 1`、`DeviceType = mcp`，**不传 SID**。工具参数 `country_code` 仅切换本次调用的站点。
 
 ## 配置
 

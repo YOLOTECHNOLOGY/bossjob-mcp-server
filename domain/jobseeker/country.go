@@ -7,25 +7,29 @@ import (
 	"github.com/YOLOTECHNOLOGY/bossjob-lib-go/ctxutil"
 )
 
-// site 为 Bossjob 国家站点：country_id 与 api-go CountryIdKeyMap 一致，currency 为 ISO 4217。
+// site 为 Bossjob 国家站点，与 jobseeker-web helpers/country.base.js countryConfig 及 auth-go 登录页选项一致。
+// Code 为 ISO 3166-1 alpha-2（工具参数 country_code），Key 为 config-go country_key，Currency 为 ISO 4217。
 type site struct {
 	ID       int32
 	Code     string
+	Key      string
 	Currency string
 }
 
 var sites = []site{
-	{92, "HK", "HKD"}, {96, "ID", "IDR"}, {105, "JP", "JPY"}, {123, "MO", "MOP"},
-	{127, "MY", "MYR"}, {167, "PH", "PHP"}, {188, "SA", "SAR"}, {193, "SG", "SGD"},
-	{211, "TW", "TWD"}, {220, "TR", "TRY"}, {38, "CA", "CAD"}, {228, "GB", "GBP"},
-	{229, "US", "USD"}, {154, "NG", "NGN"}, {227, "AE", "AED"}, {203, "LK", "LKR"},
-	{202, "ES", "EUR"}, {190, "RS", "RSD"}, {29, "BR", "BRL"},
+	{105, "JP", "jp", "JPY"}, {167, "PH", "ph", "PHP"}, {193, "SG", "sg", "SGD"}, {127, "MY", "my", "MYR"},
+	{96, "ID", "id", "IDR"}, {92, "HK", "hk", "HKD"}, {211, "TW", "tw", "TWD"}, {229, "US", "us", "USD"},
+	{228, "GB", "gb", "GBP"}, {38, "CA", "ca", "CAD"}, {29, "BR", "br", "BRL"}, {220, "TR", "tr", "TRY"},
+	{154, "NG", "ng", "NGN"}, {188, "SA", "sa", "SAR"}, {227, "AE", "ae", "AED"}, {203, "LK", "lk", "LKR"},
+	{202, "ES", "es", "EUR"}, {190, "RS", "rs", "RSD"},
+	// Others：全球站，无 ISO 国家代码与本币，不能通过 country_code 选择，只能来自 Token country_id。
+	{241, "", "com", ""},
 }
 
 func siteByCode(code string) (site, bool) {
 	code = strings.ToUpper(strings.TrimSpace(code))
 	for _, s := range sites {
-		if s.Code == code {
+		if code != "" && s.Code == code {
 			return s, true
 		}
 	}
