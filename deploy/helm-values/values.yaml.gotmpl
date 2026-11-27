@@ -6,6 +6,9 @@ image:
   repository: {{ requiredEnv "IMAGE_REPOSITORY" | quote }}
   tag: {{ requiredEnv "IMAGE_TAG" | quote }}
 
+imagePullSecrets:
+  - name: registry-pull-secret2
+
 service:
   ports:
     - name: http
