@@ -53,4 +53,7 @@ func applyDefaults(c *Conf) {
 	if c.MapConfig.MCP.JobseekerPath == "" {
 		c.MapConfig.MCP.JobseekerPath = "/jobseeker/mcp"
 	}
+	if c.MapConfig.MCP.RecruiterPath == "" {
+		c.MapConfig.MCP.RecruiterPath = "/recruiter/mcp"
+	}
 }

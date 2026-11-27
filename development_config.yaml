@@ -8,14 +8,19 @@ map_config:
     issuer: "https://dev.auth.bossjob.com"
     # 必须与 auth-go clients[].bindings.resource 完全一致
     jobseeker_resource: "https://dev.mcp.bossjob.com/jobseeker/mcp"
+    recruiter_resource: "https://dev.mcp.bossjob.com/recruiter/mcp"
     jwks_refresh_interval: 1m
     clock_skew: 30s
   grpc:
     job: "d-job-go.dev.svc.cluster.local:9000"
     jobseeker: "d-jobseeker-go.dev.svc.cluster.local:9000"
     config: "d-config-go.dev.svc.cluster.local:9000"
+    recruiter: "d-recruiter-go.dev.svc.cluster.local:9000"
+    talent: "d-talent-go.dev.svc.cluster.local:9000"
+    job_app: "d-job-app-go.dev.svc.cluster.local:9000"
     timeout: 5s
   mcp:
     jobseeker_path: "/jobseeker/mcp"
+    recruiter_path: "/recruiter/mcp"
     allowed_hosts: ["dev.mcp.bossjob.com"]
     web_base_url: "https://demo.bossjob.com/en-us/"

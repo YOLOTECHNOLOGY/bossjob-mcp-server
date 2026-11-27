@@ -35,6 +35,8 @@ type Principal struct {
 	Scopes    []string
 	TokenID   string
 	ExpiresAt time.Time
+	// SID 角色 SID（IM / CtxInfo.SID）。不在 Token 中，由领域层按需解析后通过 WithIdentity 写入（招聘者为 users.recruiter_sid）。
+	SID uint64
 }
 
 // RoleID 将 Token role 转为 ctxutil RoleID（1 求职者 / 2 招聘者）。
@@ -48,10 +50,10 @@ func (p *Principal) RoleID() int8 {
 	return 0
 }
 
-// CtxInfo 组装下游 gRPC 调用的 CtxInfo：RoleID 由 role 解析、LanguageID 固定英语、SID 不传。
+// CtxInfo 组装下游 gRPC 调用的 CtxInfo：RoleID 由 role 解析、LanguageID 固定英语，SID 仅在领域层解析后填充。
 func (p *Principal) CtxInfo(traceID string) *ctxutil.CtxInfo {
 	return &ctxutil.CtxInfo{
-		UserInfo:   ctxutil.UserInfo{UserID: p.UserID, RoleID: p.RoleID()},
+		UserInfo:   ctxutil.UserInfo{UserID: p.UserID, RoleID: p.RoleID(), SID: p.SID},
 		CountryID:  p.CountryID,
 		LanguageID: DefaultLanguageID,
 		SiteID:     DefaultSiteID,
@@ -72,4 +74,13 @@ func WithPrincipal(ctx context.Context, p *Principal, traceID string) context.Co
 func PrincipalFrom(ctx context.Context) *Principal {
 	p, _ := ctx.Value(principalKey{}).(*Principal)
 	return p
+}
+
+// WithIdentity 用领域层补全的身份（如招聘者 SID、公司国家站点）替换 context 中的身份与 CtxInfo，保留 TraceID。
+func WithIdentity(ctx context.Context, p *Principal) context.Context {
+	traceID := ""
+	if ci := ctxutil.GetCtxInfo(ctx); ci != nil {
+		traceID = ci.TraceID
+	}
+	return WithPrincipal(ctx, p, traceID)
 }

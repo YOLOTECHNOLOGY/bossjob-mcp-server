@@ -6,13 +6,18 @@ map_config:
   oauth:
     issuer: "https://dev.auth.bossjob.com"
     jobseeker_resource: "https://dev.mcp.bossjob.com/jobseeker/mcp"
+    recruiter_resource: "https://dev.mcp.bossjob.com/recruiter/mcp"
     jwks_refresh_interval: 1m
     clock_skew: 30s
   grpc:
     job: "127.0.0.1:19001"
     jobseeker: "127.0.0.1:19002"
     config: "127.0.0.1:19003"
+    recruiter: "127.0.0.1:19004"
+    talent: "127.0.0.1:19005"
+    job_app: "127.0.0.1:19006"
     timeout: 5s
   mcp:
     jobseeker_path: "/jobseeker/mcp"
+    recruiter_path: "/recruiter/mcp"
     web_base_url: "https://demo.bossjob.com/en-us/"
