@@ -9,15 +9,20 @@ configFiles:
         oauth:
           issuer: "https://dev.auth.bossjob.com"
           jobseeker_resource: "https://{{ .Environment.Values.domain }}/jobseeker/mcp"
+          recruiter_resource: "https://{{ .Environment.Values.domain }}/recruiter/mcp"
           jwks_refresh_interval: 1m
           clock_skew: 30s
         grpc:
           job: "d-job-go.dev.svc.cluster.local:9000"
           jobseeker: "d-jobseeker-go.dev.svc.cluster.local:9000"
           config: "d-config-go.dev.svc.cluster.local:9000"
+          recruiter: "d-recruiter-go.dev.svc.cluster.local:9000"
+          talent: "d-talent-go.dev.svc.cluster.local:9000"
+          job_app: "d-job-app-go.dev.svc.cluster.local:9000"
           timeout: 5s
         mcp:
           jobseeker_path: "/jobseeker/mcp"
+          recruiter_path: "/recruiter/mcp"
           allowed_hosts: ["{{ .Environment.Values.domain }}"]
           web_base_url: "https://demo.bossjob.com/en-us/"
 
