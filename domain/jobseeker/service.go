@@ -19,6 +19,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"bossjob-mcp-server/domain/mcpkit"
 	"bossjob-mcp-server/domain/oauthrs"
 )
 
@@ -43,7 +44,7 @@ type Deps struct {
 	JobSearch   jobv3.JobSearchServiceClient
 	Profiles    jobseekerv3.JobseekerProfileServiceClient
 	Preferences jobseekerv3.JobseekerPreferenceServiceClient
-	Resolver    Resolver
+	Resolver    mcpkit.Resolver
 }
 
 // Service 实现 openv1mcp.JobseekerMcpServiceServer。
@@ -74,31 +75,31 @@ func (s *Service) begin(ctx context.Context) (context.Context, context.CancelFun
 
 // SearchJobs 职位搜索；只筛选远程职位时走 SearchRemoteJobs。
 func (s *Service) SearchJobs(ctx context.Context, req *openv1.SearchJobsRequest) (*openv1.SearchJobsResponse, error) {
-	if err := validate(req); err != nil {
+	if err := mcpkit.Validate(req); err != nil {
 		return nil, err
 	}
 	if req.GetMinMonthlySalary() > 0 && req.GetMaxMonthlySalary() > 0 && req.GetMinMonthlySalary() > req.GetMaxMonthlySalary() {
-		return nil, invalidArgument("min_monthly_salary must not exceed max_monthly_salary")
+		return nil, mcpkit.InvalidArgument("min_monthly_salary must not exceed max_monthly_salary")
 	}
 	ctx, cancel, err := s.begin(ctx)
 	defer cancel()
 	if err != nil {
 		return nil, err
 	}
-	page, err := decodePage(req.GetPageToken())
+	page, err := mcpkit.DecodePage(req.GetPageToken())
 	if err != nil {
 		return nil, err
 	}
-	if ctx, err = withCountry(ctx, req.GetCountryCode()); err != nil {
+	if ctx, err = mcpkit.WithCountry(ctx, req.GetCountryCode()); err != nil {
 		return nil, err
 	}
 	xpIDs, err := s.d.Resolver.XpLvlIDs(ctx, req.GetExperienceLevels())
 	if err != nil {
 		return nil, err
 	}
-	size := pageSize(req.GetPageSize())
+	size := mcpkit.PageSize(req.GetPageSize())
 	salaryFrom, salaryTo := salaryRange(req.GetMinMonthlySalary(), req.GetMaxMonthlySalary())
-	jobTypeIDs := joinEnums(req.GetJobTypes())
+	jobTypeIDs := mcpkit.JoinEnums(req.GetJobTypes())
 	var verified *bool
 	if req.GetVerifiedCompanyOnly() {
 		verified = lo.ToPtr(true)
@@ -112,31 +113,31 @@ func (s *Service) SearchJobs(ctx context.Context, req *openv1.SearchJobsRequest)
 	if onlyRemote(req.GetWorkArrangements()) {
 		resp, err = s.d.JobSearch.SearchRemoteJobs(ctx, &jobv3.SearchRemoteJobsRequest{
 			Query: req.GetQuery(), Sort: int32(req.GetSortOrder()), Page: page, Size: size, Source: source,
-			XpLvlIds: joinIDs(xpIDs), JobTypeIds: jobTypeIDs, SalaryFrom: salaryFrom, SalaryTo: salaryTo,
+			XpLvlIds: mcpkit.JoinIDs(xpIDs), JobTypeIds: jobTypeIDs, SalaryFrom: salaryFrom, SalaryTo: salaryTo,
 			IsCompanyVerified: verified, IsSalaryHidden: salaryHidden,
 		})
 	} else {
 		resp, err = s.d.JobSearch.SearchJobs(ctx, &jobv3.SearchJobsRequest{
 			Query: req.GetQuery(), Sort: int32(req.GetSortOrder()), Page: page, Size: size, Source: source,
-			XpLvlIds: joinIDs(xpIDs), JobTypeIds: jobTypeIDs, SalaryFrom: salaryFrom, SalaryTo: salaryTo,
+			XpLvlIds: mcpkit.JoinIDs(xpIDs), JobTypeIds: jobTypeIDs, SalaryFrom: salaryFrom, SalaryTo: salaryTo,
 			JobLocations: strings.Join(req.GetLocations(), ","), ExactSelectedLocation: len(req.GetLocations()) > 0,
-			WorkArrangementIds: joinEnums(req.GetWorkArrangements()), IsCompanyVerified: verified,
+			WorkArrangementIds: mcpkit.JoinEnums(req.GetWorkArrangements()), IsCompanyVerified: verified,
 			IsSalaryHidden: salaryHidden, ExcludeNoSalary: req.GetExcludeHiddenSalary(),
 		})
 	}
 	if err != nil {
-		return nil, upstreamError(ctx, "job search", err)
+		return nil, mcpkit.UpstreamError(ctx, "job search", err)
 	}
 	return &openv1.SearchJobsResponse{
 		Jobs:          lo.Map(resp.GetJobs(), func(j *jobv3.JobDetailDTO, _ int) *openv1.JobSummary { return s.conv.jobSummary(j) }),
 		TotalSize:     resp.GetTotalNum(),
-		NextPageToken: nextPageToken(page, resp.GetTotalPages()),
+		NextPageToken: mcpkit.NextPageToken(page, resp.GetTotalPages()),
 	}, nil
 }
 
 // GetJob 职位详情。
 func (s *Service) GetJob(ctx context.Context, req *openv1.GetJobRequest) (*openv1.GetJobResponse, error) {
-	if err := validate(req); err != nil {
+	if err := mcpkit.Validate(req); err != nil {
 		return nil, err
 	}
 	ctx, cancel, err := s.begin(ctx)
@@ -146,7 +147,7 @@ func (s *Service) GetJob(ctx context.Context, req *openv1.GetJobRequest) (*openv
 	}
 	d, err := s.d.Jobs.GetJobDetail(ctx, &jobv3.GetJobDetailRequest{JobId: req.GetJobId()})
 	if err != nil {
-		return nil, upstreamError(ctx, "job detail", err)
+		return nil, mcpkit.UpstreamError(ctx, "job detail", err)
 	}
 	if d.GetId() == 0 {
 		return nil, status.Error(codes.NotFound, "job not found or no longer available")
@@ -156,7 +157,7 @@ func (s *Service) GetJob(ctx context.Context, req *openv1.GetJobRequest) (*openv
 
 // ListRecommendedJobs 按求职偏好推荐职位。
 func (s *Service) ListRecommendedJobs(ctx context.Context, req *openv1.ListRecommendedJobsRequest) (*openv1.ListRecommendedJobsResponse, error) {
-	if err := validate(req); err != nil {
+	if err := mcpkit.Validate(req); err != nil {
 		return nil, err
 	}
 	ctx, cancel, err := s.begin(ctx)
@@ -164,27 +165,27 @@ func (s *Service) ListRecommendedJobs(ctx context.Context, req *openv1.ListRecom
 	if err != nil {
 		return nil, err
 	}
-	page, err := decodePage(req.GetPageToken())
+	page, err := mcpkit.DecodePage(req.GetPageToken())
 	if err != nil {
 		return nil, err
 	}
 	resp, err := s.d.JobSearch.RecoJobs(ctx, &jobv3.RecoJobsRequest{
 		JobPreferenceId: req.GetJobPreferenceId(),
-		SearchParams:    &jobv3.SearchJobsRequest{Page: page, Size: pageSize(req.GetPageSize()), Source: source},
+		SearchParams:    &jobv3.SearchJobsRequest{Page: page, Size: mcpkit.PageSize(req.GetPageSize()), Source: source},
 	})
 	if err != nil {
-		return nil, upstreamError(ctx, "job recommendation", err)
+		return nil, mcpkit.UpstreamError(ctx, "job recommendation", err)
 	}
 	return &openv1.ListRecommendedJobsResponse{
 		Jobs:          lo.Map(resp.GetJobs(), func(j *jobv3.JobDetailDTO, _ int) *openv1.JobSummary { return s.conv.jobSummary(j) }),
-		NextPageToken: nextPageToken(page, resp.GetTotalPages()),
+		NextPageToken: mcpkit.NextPageToken(page, resp.GetTotalPages()),
 		IsFallback:    resp.GetIsFallback(),
 	}, nil
 }
 
 // GetMyProfile 个人资料摘要；偏好与完成度为 best-effort，失败时降级为空。
 func (s *Service) GetMyProfile(ctx context.Context, req *openv1.GetMyProfileRequest) (*openv1.GetMyProfileResponse, error) {
-	if err := validate(req); err != nil {
+	if err := mcpkit.Validate(req); err != nil {
 		return nil, err
 	}
 	ctx, cancel, err := s.begin(ctx)
@@ -218,7 +219,7 @@ func (s *Service) GetMyProfile(ctx context.Context, req *openv1.GetMyProfileRequ
 		return nil
 	})
 	if err := g.Wait(); err != nil {
-		return nil, upstreamError(ctx, "profile", err)
+		return nil, mcpkit.UpstreamError(ctx, "profile", err)
 	}
 	prefs := prefResp.GetJobPreferences()
 	if len(prefs) == 0 {
@@ -241,7 +242,7 @@ func (s *Service) GetMyProfile(ctx context.Context, req *openv1.GetMyProfileRequ
 
 // EvaluateJobMatch 职位匹配评估。
 func (s *Service) EvaluateJobMatch(ctx context.Context, req *openv1.EvaluateJobMatchRequest) (*openv1.EvaluateJobMatchResponse, error) {
-	if err := validate(req); err != nil {
+	if err := mcpkit.Validate(req); err != nil {
 		return nil, err
 	}
 	ctx, cancel, err := s.begin(ctx)
@@ -251,14 +252,14 @@ func (s *Service) EvaluateJobMatch(ctx context.Context, req *openv1.EvaluateJobM
 	}
 	resp, err := s.d.Preferences.JobMatchEvaluate(ctx, &jobseekerv3.JobMatchEvaluateRequest{JobId: req.GetJobId()})
 	if err != nil {
-		return nil, upstreamError(ctx, "job match evaluation", err)
+		return nil, mcpkit.UpstreamError(ctx, "job match evaluation", err)
 	}
 	return &openv1.EvaluateJobMatchResponse{IsMatch: resp.GetIsMatch(), Reasons: resp.GetReasons(), Suggestions: resp.GetSuggestions()}, nil
 }
 
 // ListMyApplications 投递记录。
 func (s *Service) ListMyApplications(ctx context.Context, req *openv1.ListMyApplicationsRequest) (*openv1.ListMyApplicationsResponse, error) {
-	if err := validate(req); err != nil {
+	if err := mcpkit.Validate(req); err != nil {
 		return nil, err
 	}
 	ctx, cancel, err := s.begin(ctx)
@@ -266,13 +267,13 @@ func (s *Service) ListMyApplications(ctx context.Context, req *openv1.ListMyAppl
 	if err != nil {
 		return nil, err
 	}
-	page, err := decodePage(req.GetPageToken())
+	page, err := mcpkit.DecodePage(req.GetPageToken())
 	if err != nil {
 		return nil, err
 	}
-	resp, err := s.d.Jobs.ListAppliedJobs(ctx, &jobv3.ListAppliedJobsRequest{Page: page, Size: pageSize(req.GetPageSize())})
+	resp, err := s.d.Jobs.ListAppliedJobs(ctx, &jobv3.ListAppliedJobsRequest{Page: page, Size: mcpkit.PageSize(req.GetPageSize())})
 	if err != nil {
-		return nil, upstreamError(ctx, "application list", err)
+		return nil, mcpkit.UpstreamError(ctx, "application list", err)
 	}
 	return &openv1.ListMyApplicationsResponse{
 		Applications: lo.Map(resp.GetAppliedJobs(), func(a *jobv3.JobApplicationListItem, _ int) *openv1.JobApplication {
@@ -286,13 +287,13 @@ func (s *Service) ListMyApplications(ctx context.Context, req *openv1.ListMyAppl
 			}
 		}),
 		TotalSize:     resp.GetTotalNum(),
-		NextPageToken: nextPageToken(page, resp.GetTotalPages()),
+		NextPageToken: mcpkit.NextPageToken(page, resp.GetTotalPages()),
 	}, nil
 }
 
 // ListSavedJobs 收藏职位列表。
 func (s *Service) ListSavedJobs(ctx context.Context, req *openv1.ListSavedJobsRequest) (*openv1.ListSavedJobsResponse, error) {
-	if err := validate(req); err != nil {
+	if err := mcpkit.Validate(req); err != nil {
 		return nil, err
 	}
 	ctx, cancel, err := s.begin(ctx)
@@ -300,13 +301,13 @@ func (s *Service) ListSavedJobs(ctx context.Context, req *openv1.ListSavedJobsRe
 	if err != nil {
 		return nil, err
 	}
-	page, err := decodePage(req.GetPageToken())
+	page, err := mcpkit.DecodePage(req.GetPageToken())
 	if err != nil {
 		return nil, err
 	}
-	resp, err := s.d.Jobs.ListSavedJobs(ctx, &jobv3.ListSavedJobsRequest{Page: page, Size: pageSize(req.GetPageSize())})
+	resp, err := s.d.Jobs.ListSavedJobs(ctx, &jobv3.ListSavedJobsRequest{Page: page, Size: mcpkit.PageSize(req.GetPageSize())})
 	if err != nil {
-		return nil, upstreamError(ctx, "saved job list", err)
+		return nil, mcpkit.UpstreamError(ctx, "saved job list", err)
 	}
 	return &openv1.ListSavedJobsResponse{
 		SavedJobs: lo.Map(resp.GetSavedJobs(), func(it *jobv3.SavedJobItem, _ int) *openv1.SavedJob {
@@ -321,13 +322,13 @@ func (s *Service) ListSavedJobs(ctx context.Context, req *openv1.ListSavedJobsRe
 			return &openv1.SavedJob{Job: job, SaveTime: it.GetCreatedAt()}
 		}),
 		TotalSize:     resp.GetTotalNum(),
-		NextPageToken: nextPageToken(page, resp.GetTotalPages()),
+		NextPageToken: mcpkit.NextPageToken(page, resp.GetTotalPages()),
 	}, nil
 }
 
 // SaveJob 收藏职位（幂等：已收藏视为成功）。
 func (s *Service) SaveJob(ctx context.Context, req *openv1.SaveJobRequest) (*openv1.SaveJobResponse, error) {
-	if err := validate(req); err != nil {
+	if err := mcpkit.Validate(req); err != nil {
 		return nil, err
 	}
 	ctx, cancel, err := s.begin(ctx)
@@ -340,14 +341,14 @@ func (s *Service) SaveJob(ctx context.Context, req *openv1.SaveJobRequest) (*ope
 		return &openv1.SaveJobResponse{JobId: req.GetJobId()}, nil
 	}
 	if err != nil {
-		return nil, upstreamError(ctx, "save job", err)
+		return nil, mcpkit.UpstreamError(ctx, "save job", err)
 	}
 	return &openv1.SaveJobResponse{JobId: req.GetJobId(), SaveTime: resp.GetCreatedAt()}, nil
 }
 
 // UnsaveJob 取消收藏（幂等：未收藏视为成功）。
 func (s *Service) UnsaveJob(ctx context.Context, req *openv1.UnsaveJobRequest) (*openv1.UnsaveJobResponse, error) {
-	if err := validate(req); err != nil {
+	if err := mcpkit.Validate(req); err != nil {
 		return nil, err
 	}
 	ctx, cancel, err := s.begin(ctx)
@@ -357,14 +358,14 @@ func (s *Service) UnsaveJob(ctx context.Context, req *openv1.UnsaveJobRequest) (
 	}
 	_, err = s.d.Jobs.DeleteSavedJob(ctx, &jobv3.DeleteSavedJobRequest{JobId: req.GetJobId()})
 	if err != nil && status.Code(err) != codes.NotFound {
-		return nil, upstreamError(ctx, "unsave job", err)
+		return nil, mcpkit.UpstreamError(ctx, "unsave job", err)
 	}
 	return &openv1.UnsaveJobResponse{JobId: req.GetJobId()}, nil
 }
 
 // GetSalaryInsight 薪资洞察：职位名称 / 地点经 config-go 解析为内部 ID 后调用 SearchSalary。
 func (s *Service) GetSalaryInsight(ctx context.Context, req *openv1.GetSalaryInsightRequest) (*openv1.GetSalaryInsightResponse, error) {
-	if err := validate(req); err != nil {
+	if err := mcpkit.Validate(req); err != nil {
 		return nil, err
 	}
 	ctx, cancel, err := s.begin(ctx)
@@ -372,89 +373,7 @@ func (s *Service) GetSalaryInsight(ctx context.Context, req *openv1.GetSalaryIns
 	if err != nil {
 		return nil, err
 	}
-	if ctx, err = withCountry(ctx, req.GetCountryCode()); err != nil {
-		return nil, err
-	}
-	title, err := s.d.Resolver.JobTitle(ctx, req.GetJobTitle())
-	if err != nil {
-		return nil, err
-	}
-	if title == nil || title.ID <= 0 {
-		return nil, status.Errorf(codes.NotFound, "no standard job title matches %q; try a more common title", req.GetJobTitle())
-	}
-	salaryReq := &salaryLookup{FunctionJobTitleID: title.ID}
-	matchedLocation := ""
-	if req.GetLocation() != "" {
-		loc, err := s.d.Resolver.Location(ctx, req.GetLocation())
-		if err != nil {
-			return nil, err
-		}
-		if loc == nil {
-			return nil, status.Errorf(codes.NotFound, "location %q is not a known city or region of this country site", req.GetLocation())
-		}
-		salaryReq.LocationID, salaryReq.RegionID, matchedLocation = loc.LocationID, loc.RegionID, loc.Name
-	}
-	resp, err := s.d.JobSearch.SearchSalary(ctx, salaryReq.toPB())
-	if err != nil {
-		return nil, upstreamError(ctx, "salary insight", err)
-	}
-	currency := ""
-	if st, ok := siteByID(int64(currentCountryID(ctx))); ok {
-		currency = st.Currency
-	}
-	return &openv1.GetSalaryInsightResponse{
-		MatchedJobTitle:     title.Title,
-		MatchedLocation:     matchedLocation,
-		CurrencyCode:        currency,
-		MedianMonthlySalary: resp.GetMedianData(),
-		Distribution: lo.Map(resp.GetPercentageList(), func(p *jobv3.SearchSalaryPercentageItem, _ int) *openv1.SalaryBucket {
-			return &openv1.SalaryBucket{
-				MinAmount: int64(p.GetSalaryRangeFrom()), MaxAmount: int64(p.GetSalaryRangeTo()),
-				Percentage: parsePercent(p.GetPercentage()), JobCount: p.GetNum(), DisplayText: p.GetSalaryRangeValue(),
-			}
-		}),
-		Trend: salaryTrend(resp.GetAvgMonthList(), time.Now()),
-	}, nil
-}
-
-type salaryLookup struct {
-	FunctionJobTitleID int64
-	LocationID         int64
-	RegionID           int64
-}
-
-func (r *salaryLookup) toPB() *jobv3.SearchSalaryRequest {
-	out := &jobv3.SearchSalaryRequest{FunctionJobTitleId: lo.ToPtr(r.FunctionJobTitleID), Source: source}
-	if r.LocationID > 0 {
-		out.JobLocationId = lo.ToPtr(r.LocationID)
-	}
-	if r.RegionID > 0 {
-		out.JobRegionId = lo.ToPtr(r.RegionID)
-	}
-	return out
-}
-
-// salaryTrend 将 month_num（1-12，按时间先后）还原为 "YYYY-MM"：晚于当前月份的视为上一年。
-func salaryTrend(items []*jobv3.SearchSalaryAvgMonthItem, now time.Time) []*openv1.MonthlySalaryAverage {
-	return lo.FilterMap(items, func(it *jobv3.SearchSalaryAvgMonthItem, _ int) (*openv1.MonthlySalaryAverage, bool) {
-		m := int(it.GetMonthNum())
-		if m < 1 || m > 12 {
-			return nil, false
-		}
-		year := now.Year()
-		if m > int(now.Month()) {
-			year--
-		}
-		return &openv1.MonthlySalaryAverage{Month: time.Date(year, time.Month(m), 1, 0, 0, 0, 0, time.UTC).Format("2006-01"), AverageSalary: it.GetSalaryAvg()}, true
-	})
-}
-
-func parsePercent(s string) float64 {
-	v, err := strconv.ParseFloat(strings.TrimSpace(strings.TrimSuffix(strings.TrimSpace(s), "%")), 64)
-	if err != nil {
-		return 0
-	}
-	return v
+	return mcpkit.SalaryInsight(ctx, s.d.JobSearch, s.d.Resolver, source, req)
 }
 
 func salaryRange(min, max int32) (string, string) {
@@ -471,12 +390,4 @@ func salaryRange(min, max int32) (string, string) {
 
 func onlyRemote(was []openv1.WorkArrangement) bool {
 	return len(was) > 0 && lo.EveryBy(was, func(w openv1.WorkArrangement) bool { return w == openv1.WorkArrangement_WORK_ARRANGEMENT_REMOTE })
-}
-
-func joinEnums[T ~int32](values []T) string {
-	return strings.Join(lo.Map(lo.Uniq(values), func(v T, _ int) string { return strconv.Itoa(int(v)) }), ",")
-}
-
-func joinIDs(ids []int64) string {
-	return strings.Join(lo.Map(lo.Uniq(ids), func(v int64, _ int) string { return strconv.FormatInt(v, 10) }), ",")
 }

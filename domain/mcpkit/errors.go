@@ -1,4 +1,4 @@
-package jobseeker
+package mcpkit
 
 import (
 	"context"
@@ -10,23 +10,23 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func invalidArgument(format string, args ...any) error {
+func InvalidArgument(format string, args ...any) error {
 	return status.Error(codes.InvalidArgument, fmt.Sprintf(format, args...))
 }
 
-// validatable 为 protoc-gen-validate 生成的校验方法。
-type validatable interface{ ValidateAll() error }
+// Validatable 为 protoc-gen-validate 生成的校验方法。
+type Validatable interface{ ValidateAll() error }
 
-func validate(req validatable) error {
+func Validate(req Validatable) error {
 	if err := req.ValidateAll(); err != nil {
 		return status.Error(codes.InvalidArgument, err.Error())
 	}
 	return nil
 }
 
-// upstreamError 将下游 gRPC 错误转为面向模型的错误：业务可理解的状态码保留原消息，
+// UpstreamError 将下游 gRPC 错误转为面向模型的错误：业务可理解的状态码保留原消息，
 // 内部错误只返回通用描述，原始错误写日志。
-func upstreamError(ctx context.Context, op string, err error) error {
+func UpstreamError(ctx context.Context, op string, err error) error {
 	if err == nil {
 		return nil
 	}
