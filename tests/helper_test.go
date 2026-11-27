@@ -17,7 +17,10 @@ import (
 
 	configv3 "github.com/YOLOTECHNOLOGY/bossjob-api-public/go/config/v3"
 	jobv3 "github.com/YOLOTECHNOLOGY/bossjob-api-public/go/job/v3"
+	jobappv3 "github.com/YOLOTECHNOLOGY/bossjob-api-public/go/job_app/v3"
 	jobseekerv3 "github.com/YOLOTECHNOLOGY/bossjob-api-public/go/jobseeker/v3"
+	recruiterv3 "github.com/YOLOTECHNOLOGY/bossjob-api-public/go/recruiter/v3"
+	talentv3 "github.com/YOLOTECHNOLOGY/bossjob-api-public/go/talent/v3"
 	"github.com/YOLOTECHNOLOGY/bossjob-lib-go/ctxutil"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/mark3labs/mcp-go/client"
@@ -33,8 +36,10 @@ import (
 const (
 	testIssuer   = "https://dev.auth.bossjob.com"
 	testResource = "https://dev.mcp.bossjob.com/jobseeker/mcp"
-	testKid      = "test-kid"
-	testUserID   = 1001
+	// testRecruiterResource 招聘者 MCP resource（与 tests/config.yaml recruiter_resource 一致）。
+	testRecruiterResource = "https://dev.mcp.bossjob.com/recruiter/mcp"
+	testKid               = "test-kid"
+	testUserID            = 1001
 )
 
 var (
@@ -89,6 +94,15 @@ func signToken(t *testing.T, overrides jwt.MapClaims) string {
 		t.Fatalf("sign: %v", err)
 	}
 	return raw
+}
+
+// signRecruiterToken 生成招聘者 MCP 的 Access Token（aud = 招聘者 resource，role = recruiter）。
+func signRecruiterToken(t *testing.T, overrides jwt.MapClaims) string {
+	claims := jwt.MapClaims{"aud": testRecruiterResource, "role": "recruiter"}
+	for k, v := range overrides {
+		claims[k] = v
+	}
+	return signToken(t, claims)
 }
 
 // call 记录一次下游调用：请求与当时的 CtxInfo（即 climw.CtxMD 会透传给下游的身份）。
@@ -233,6 +247,93 @@ func (f *fakeConfigSearch) SearchJobTitleLists(ctx context.Context, in *configv3
 	return typed[*configv3.SearchJobTitleListsResponse](f.record(ctx, "SearchJobTitleLists", in))
 }
 
+type fakeJobManagement struct {
+	jobv3.JobManagementServiceClient
+	*recorder
+}
+
+func (f *fakeJobManagement) ManageJobList(ctx context.Context, in *jobv3.ManageJobListRequest, _ ...grpc.CallOption) (*jobv3.ManageJobListResponse, error) {
+	return typed[*jobv3.ManageJobListResponse](f.record(ctx, "ManageJobList", in))
+}
+func (f *fakeJobManagement) ManageJobDetail(ctx context.Context, in *jobv3.ManageJobDetailRequest, _ ...grpc.CallOption) (*jobv3.ManageJobDetailResponse, error) {
+	return typed[*jobv3.ManageJobDetailResponse](f.record(ctx, "ManageJobDetail", in))
+}
+
+type fakeRecruiterProfile struct {
+	recruiterv3.RecruiterProfileServiceClient
+	*recorder
+}
+
+func (f *fakeRecruiterProfile) GetMyProfile(ctx context.Context, in *recruiterv3.GetMyProfileRequest, _ ...grpc.CallOption) (*recruiterv3.GetMyProfileResponse, error) {
+	return typed[*recruiterv3.GetMyProfileResponse](f.record(ctx, "RecruiterGetMyProfile", in))
+}
+
+type fakeRecruiterStat struct {
+	recruiterv3.RecruiterStatServiceClient
+	*recorder
+}
+
+func (f *fakeRecruiterStat) GetRecruitmentData(ctx context.Context, in *recruiterv3.GetRecruitmentDataRequest, _ ...grpc.CallOption) (*recruiterv3.GetRecruitmentDataResponse, error) {
+	return typed[*recruiterv3.GetRecruitmentDataResponse](f.record(ctx, "GetRecruitmentData", in))
+}
+
+type fakeRecruiterInternal struct {
+	recruiterv3.RecruiterInternalServiceClient
+	*recorder
+}
+
+func (f *fakeRecruiterInternal) GetRecruiterContextInternal(ctx context.Context, in *recruiterv3.GetRecruiterContextInternalRequest, _ ...grpc.CallOption) (*recruiterv3.GetRecruiterContextInternalResponse, error) {
+	return typed[*recruiterv3.GetRecruiterContextInternalResponse](f.record(ctx, "GetRecruiterContextInternal", in))
+}
+
+type fakeTalents struct {
+	talentv3.TalentServiceClient
+	*recorder
+}
+
+func (f *fakeTalents) GetTalentDetail(ctx context.Context, in *talentv3.GetTalentDetailRequest, _ ...grpc.CallOption) (*talentv3.TalentDetail, error) {
+	return typed[*talentv3.TalentDetail](f.record(ctx, "GetTalentDetail", in))
+}
+func (f *fakeTalents) GetChattedTalents(ctx context.Context, in *talentv3.GetChattedTalentsRequest, _ ...grpc.CallOption) (*talentv3.GetChattedTalentsResponse, error) {
+	return typed[*talentv3.GetChattedTalentsResponse](f.record(ctx, "GetChattedTalents", in))
+}
+func (f *fakeTalents) GetSavedMyJobTalents(ctx context.Context, in *talentv3.GetSavedMyJobTalentsRequest, _ ...grpc.CallOption) (*talentv3.GetSavedMyJobTalentsResponse, error) {
+	return typed[*talentv3.GetSavedMyJobTalentsResponse](f.record(ctx, "GetSavedMyJobTalents", in))
+}
+func (f *fakeTalents) GetViewedMyJobTalents(ctx context.Context, in *talentv3.GetViewedMyJobTalentsRequest, _ ...grpc.CallOption) (*talentv3.GetViewedMyJobTalentsResponse, error) {
+	return typed[*talentv3.GetViewedMyJobTalentsResponse](f.record(ctx, "GetViewedMyJobTalents", in))
+}
+func (f *fakeTalents) GetSavedTalents(ctx context.Context, in *talentv3.GetSavedTalentsRequest, _ ...grpc.CallOption) (*talentv3.GetSavedTalentsResponse, error) {
+	return typed[*talentv3.GetSavedTalentsResponse](f.record(ctx, "GetSavedTalents", in))
+}
+func (f *fakeTalents) SaveTalent(ctx context.Context, in *talentv3.SaveTalentRequest, _ ...grpc.CallOption) (*talentv3.TalentActionResponse, error) {
+	return typed[*talentv3.TalentActionResponse](f.record(ctx, "SaveTalent", in))
+}
+func (f *fakeTalents) DeleteSavedTalent(ctx context.Context, in *talentv3.DeleteSavedTalentRequest, _ ...grpc.CallOption) (*talentv3.TalentActionResponse, error) {
+	return typed[*talentv3.TalentActionResponse](f.record(ctx, "DeleteSavedTalent", in))
+}
+
+type fakeTalentSearch struct {
+	talentv3.TalentSearchServiceClient
+	*recorder
+}
+
+func (f *fakeTalentSearch) SearchTalent(ctx context.Context, in *talentv3.SearchTalentRequest, _ ...grpc.CallOption) (*talentv3.SearchTalentResponse, error) {
+	return typed[*talentv3.SearchTalentResponse](f.record(ctx, "SearchTalent", in))
+}
+func (f *fakeTalentSearch) GetRecoTalent(ctx context.Context, in *talentv3.GetRecoTalentRequest, _ ...grpc.CallOption) (*talentv3.GetRecoTalentResponse, error) {
+	return typed[*talentv3.GetRecoTalentResponse](f.record(ctx, "GetRecoTalent", in))
+}
+
+type fakeInterviews struct {
+	jobappv3.RecruiterInterviewServiceClient
+	*recorder
+}
+
+func (f *fakeInterviews) ListInterviews(ctx context.Context, in *jobappv3.ListInterviewsRequest, _ ...grpc.CallOption) (*jobappv3.ListInterviewsResponse, error) {
+	return typed[*jobappv3.ListInterviewsResponse](f.record(ctx, "ListInterviews", in))
+}
+
 // env 测试环境：DI 容器 + 下游 fake（通过 Decorate 替换）+ 测试公钥。
 type env struct {
 	c   *dig.Container
@@ -257,6 +358,25 @@ func newEnv(t *testing.T) *env {
 		func(configv3.ConfigSearchServiceClient) configv3.ConfigSearchServiceClient {
 			return &fakeConfigSearch{recorder: rec}
 		},
+		func(jobv3.JobManagementServiceClient) jobv3.JobManagementServiceClient {
+			return &fakeJobManagement{recorder: rec}
+		},
+		func(recruiterv3.RecruiterProfileServiceClient) recruiterv3.RecruiterProfileServiceClient {
+			return &fakeRecruiterProfile{recorder: rec}
+		},
+		func(recruiterv3.RecruiterStatServiceClient) recruiterv3.RecruiterStatServiceClient {
+			return &fakeRecruiterStat{recorder: rec}
+		},
+		func(recruiterv3.RecruiterInternalServiceClient) recruiterv3.RecruiterInternalServiceClient {
+			return &fakeRecruiterInternal{recorder: rec}
+		},
+		func(talentv3.TalentServiceClient) talentv3.TalentServiceClient { return &fakeTalents{recorder: rec} },
+		func(talentv3.TalentSearchServiceClient) talentv3.TalentSearchServiceClient {
+			return &fakeTalentSearch{recorder: rec}
+		},
+		func(jobappv3.RecruiterInterviewServiceClient) jobappv3.RecruiterInterviewServiceClient {
+			return &fakeInterviews{recorder: rec}
+		},
 	}
 	for _, d := range decorations {
 		if err := c.Decorate(d); err != nil {
@@ -275,11 +395,17 @@ func (e *env) server(t *testing.T) *httptest.Server {
 	return srv
 }
 
-// client 以指定 Token 建立 MCP 会话并完成 initialize。
+// client 以指定 Token 建立求职者 MCP 会话并完成 initialize。
 func (e *env) client(t *testing.T, token string) *client.Client {
 	t.Helper()
+	return e.clientAt(t, "/jobseeker/mcp", token)
+}
+
+// clientAt 以指定 Token 连接指定 MCP 端点并完成 initialize。
+func (e *env) clientAt(t *testing.T, path, token string) *client.Client {
+	t.Helper()
 	srv := e.server(t)
-	cli, err := client.NewStreamableHttpClient(srv.URL+"/jobseeker/mcp",
+	cli, err := client.NewStreamableHttpClient(srv.URL+path,
 		transport.WithHTTPHeaders(map[string]string{"Authorization": "Bearer " + token}))
 	if err != nil {
 		t.Fatalf("new client: %v", err)
@@ -326,6 +452,9 @@ func countryConfigFixture(t *testing.T) *configv3.GetCountryConfigResponse {
 	raw := `{
 	  "xp_lvls": [{"id": 1, "key": "no_experience", "value": "No Experience", "seo-value": "no-experience"},
 	              {"id": 2, "key": "1_3_yrs", "value": "1 - 3 Yrs", "seo-value": "1-3-yrs"}],
+	  "degrees": [{"id": 3, "key": "bachelor", "value": "Bachelor"}, {"id": 4, "key": "master", "value": "Master"}],
+	  "notice_period_lists": [{"id": 1, "value": "Immediately"}, {"id": 2, "value": "Within 1 month"}],
+	  "language_lists": [{"id": 1, "code": "en", "value": "English"}, {"id": 2, "code": "ja", "value": "Japanese"}],
 	  "location_lists": [
 	    {"id": 10, "key": "central_visayas", "value": "Central Visayas", "display_name": "Central Visayas",
 	     "locations": [{"id": 101, "key": "cebu", "value": "Cebu"}]},

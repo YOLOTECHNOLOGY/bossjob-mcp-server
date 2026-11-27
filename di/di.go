@@ -5,7 +5,9 @@ import (
 	"bossjob-mcp-server/cmd/servecmd"
 	"bossjob-mcp-server/conf"
 	"bossjob-mcp-server/domain/jobseeker"
+	"bossjob-mcp-server/domain/mcpkit"
 	"bossjob-mcp-server/domain/oauthrs"
+	"bossjob-mcp-server/domain/recruiter"
 	"bossjob-mcp-server/infra"
 
 	"go.uber.org/dig"
@@ -30,18 +32,29 @@ func NewContainer() *dig.Container {
 	c.Provide(func(cfg conf.OAuthConfig) oauthrs.KeySource {
 		return oauthrs.NewJWKSKeySource(cfg.JWKSURI(), cfg.JWKSRefreshInterval, nil)
 	})
-	c.Provide(func(cfg conf.OAuthConfig, keys oauthrs.KeySource) oauthrs.Verifier {
-		return oauthrs.NewVerifier(oauthrs.VerifierConfig{
-			Issuer: cfg.Issuer, Resource: cfg.JobseekerResource, Role: oauthrs.RoleJobseeker, ClockSkew: cfg.ClockSkew,
-		}, keys)
+	c.Provide(func(cfg conf.OAuthConfig, keys oauthrs.KeySource) oauthrs.Verifiers {
+		verifier := func(resource, role string) oauthrs.Verifier {
+			return oauthrs.NewVerifier(oauthrs.VerifierConfig{
+				Issuer: cfg.Issuer, Resource: resource, Role: role, ClockSkew: cfg.ClockSkew,
+			}, keys)
+		}
+		return oauthrs.Verifiers{
+			Jobseeker: verifier(cfg.JobseekerResource, oauthrs.RoleJobseeker),
+			Recruiter: verifier(cfg.RecruiterResource, oauthrs.RoleRecruiter),
+		}
 	})
 
 	// domain
 	c.Provide(func(g conf.GRPCConfig, m conf.MCPConfig) jobseeker.Options {
 		return jobseeker.Options{WebBaseURL: m.WebBaseURL, Timeout: g.Timeout}
 	})
-	c.Provide(jobseeker.NewResolver)
+	c.Provide(mcpkit.NewResolver)
 	c.Provide(jobseeker.NewService)
+	c.Provide(func(g conf.GRPCConfig, m conf.MCPConfig) recruiter.Options {
+		return recruiter.Options{WebBaseURL: m.WebBaseURL, Timeout: g.Timeout, IdentityTTL: recruiter.DefaultIdentityTTL}
+	})
+	c.Provide(recruiter.NewIdentityResolver)
+	c.Provide(recruiter.NewService)
 
 	// app
 	c.Provide(app.NewMCPApp)

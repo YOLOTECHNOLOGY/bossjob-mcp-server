@@ -7,14 +7,19 @@ map_config:
   oauth:
     issuer: "https://auth.bossjob.com"
     jobseeker_resource: "https://mcp.bossjob.com/jobseeker/mcp"
+    recruiter_resource: "https://mcp.bossjob.com/recruiter/mcp"
     jwks_refresh_interval: 1m
     clock_skew: 30s
   grpc:
     job: "<job-go service>:9000"
     jobseeker: "<jobseeker-go service>:9000"
     config: "<config-go service>:9000"
+    recruiter: "<recruiter-go service>:9000"
+    talent: "<talent-go service>:9000"
+    job_app: "<job-app-go service>:9000"
     timeout: 5s
   mcp:
     jobseeker_path: "/jobseeker/mcp"
+    recruiter_path: "/recruiter/mcp"
     allowed_hosts: ["mcp.bossjob.com"]
     web_base_url: "https://bossjob.com"

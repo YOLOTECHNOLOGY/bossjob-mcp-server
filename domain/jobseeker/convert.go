@@ -8,6 +8,8 @@ import (
 	jobseekerv3 "github.com/YOLOTECHNOLOGY/bossjob-api-public/go/jobseeker/v3"
 	openv1 "github.com/YOLOTECHNOLOGY/bossjob-api-public/go/open/v1"
 	"github.com/samber/lo"
+
+	"bossjob-mcp-server/domain/mcpkit"
 )
 
 // converter 将领域服务 DTO 转为精简的 MCP 输出；不映射任何联系方式字段（如 RecruiterDTO.email）。
@@ -15,12 +17,7 @@ type converter struct {
 	webBaseURL string
 }
 
-func (c converter) absURL(u string) string {
-	if u == "" || strings.HasPrefix(u, "http://") || strings.HasPrefix(u, "https://") || c.webBaseURL == "" {
-		return u
-	}
-	return strings.TrimRight(c.webBaseURL, "/") + "/" + strings.TrimLeft(u, "/")
-}
+func (c converter) absURL(u string) string { return mcpkit.AbsURL(c.webBaseURL, u) }
 
 func (c converter) company(d *jobv3.CompanyDTO) *openv1.CompanySummary {
 	if d == nil || d.GetId() == 0 {
@@ -52,16 +49,16 @@ func salary(d *jobv3.JobDetailDTO) *openv1.Salary {
 	switch period {
 	case openv1.SalaryPeriod_SALARY_PERIOD_DAILY:
 		s.MinAmount, s.MaxAmount = d.GetDailySalaryRangeFrom(), d.GetDailySalaryRangeTo()
-		s.DisplayText = firstNonEmpty(d.GetLocalDailySalaryRangeValue(), d.GetDailySalaryRangeValue())
+		s.DisplayText = mcpkit.FirstNonEmpty(d.GetLocalDailySalaryRangeValue(), d.GetDailySalaryRangeValue())
 	case openv1.SalaryPeriod_SALARY_PERIOD_HOURLY:
 		s.MinAmount, s.MaxAmount = d.GetHourlySalaryRangeFrom(), d.GetHourlySalaryRangeTo()
-		s.DisplayText = firstNonEmpty(d.GetLocalHourlySalaryRangeValue(), d.GetHourlySalaryRangeValue())
+		s.DisplayText = mcpkit.FirstNonEmpty(d.GetLocalHourlySalaryRangeValue(), d.GetHourlySalaryRangeValue())
 	case openv1.SalaryPeriod_SALARY_PERIOD_ANNUALLY:
 		s.MinAmount, s.MaxAmount = d.GetAnnuallySalaryRangeFrom(), d.GetAnnuallySalaryRangeTo()
-		s.DisplayText = firstNonEmpty(d.GetLocalAnnuallySalaryRangeValue(), d.GetAnnuallySalaryRangeValue())
+		s.DisplayText = mcpkit.FirstNonEmpty(d.GetLocalAnnuallySalaryRangeValue(), d.GetAnnuallySalaryRangeValue())
 	default:
 		s.MinAmount, s.MaxAmount = d.GetSalaryRangeFrom(), d.GetSalaryRangeTo()
-		s.DisplayText = firstNonEmpty(d.GetLocalSalaryRangeValue(), d.GetSalaryRangeValue())
+		s.DisplayText = mcpkit.FirstNonEmpty(d.GetLocalSalaryRangeValue(), d.GetSalaryRangeValue())
 	}
 	if s.IsHidden {
 		s.MinAmount, s.MaxAmount = "", ""
@@ -83,16 +80,9 @@ func workArrangement(id int64) openv1.WorkArrangement {
 	return openv1.WorkArrangement_WORK_ARRANGEMENT_UNSPECIFIED
 }
 
-func countryCode(id int64) string {
-	if s, ok := siteByID(id); ok {
-		return s.Code
-	}
-	return ""
-}
-
 func names(items []*jobv3.NamedItemDTO) []string {
 	return lo.FilterMap(items, func(it *jobv3.NamedItemDTO, _ int) (string, bool) {
-		n := firstNonEmpty(it.GetName(), it.GetValue())
+		n := mcpkit.FirstNonEmpty(it.GetName(), it.GetValue())
 		return n, n != ""
 	})
 }
@@ -105,8 +95,8 @@ func (c converter) jobSummary(d *jobv3.JobDetailDTO) *openv1.JobSummary {
 		JobId:           d.GetId(),
 		Title:           d.GetJobTitle(),
 		Company:         c.company(d.GetCompany()),
-		Location:        firstNonEmpty(d.GetJobLocation(), d.GetLocation().GetValue()),
-		CountryCode:     countryCode(d.GetJobCountryId()),
+		Location:        mcpkit.FirstNonEmpty(d.GetJobLocation(), d.GetLocation().GetValue()),
+		CountryCode:     mcpkit.CountryCode(d.GetJobCountryId()),
 		Salary:          salary(d),
 		JobType:         jobType(d.GetJobTypeId()),
 		WorkArrangement: workArrangement(d.GetWorkArrangement().GetId()),
@@ -134,7 +124,7 @@ func (c converter) job(d *jobv3.JobDetailDTO) *openv1.Job {
 			JobTitle:     r.GetWorkExperience().GetJobTitle(),
 			LastActiveAt: r.GetLastActiveAt(),
 			ResponseRate: r.GetResponseRate(),
-			ReplyLabel:   firstNonEmpty(r.GetReplyLabel(), d.GetRecruiterReplyLabel()),
+			ReplyLabel:   mcpkit.FirstNonEmpty(r.GetReplyLabel(), d.GetRecruiterReplyLabel()),
 		}
 	}
 	return &openv1.Job{
@@ -142,15 +132,15 @@ func (c converter) job(d *jobv3.JobDetailDTO) *openv1.Job {
 		Title:            d.GetJobTitle(),
 		Company:          c.company(d.GetCompany()),
 		Recruiter:        recruiter,
-		Location:         firstNonEmpty(d.GetJobLocation(), d.GetLocation().GetValue()),
-		CountryCode:      countryCode(d.GetJobCountryId()),
+		Location:         mcpkit.FirstNonEmpty(d.GetJobLocation(), d.GetLocation().GetValue()),
+		CountryCode:      mcpkit.CountryCode(d.GetJobCountryId()),
 		FullAddress:      d.GetFullAddress(),
 		Salary:           salary(d),
 		JobType:          jobType(d.GetJobTypeId()),
 		WorkArrangement:  workArrangement(d.GetWorkArrangement().GetId()),
 		ExperienceLevel:  d.GetXpLvl().GetValue(),
 		Degree:           d.GetDegree().GetValue(),
-		JobFunction:      firstNonEmpty(d.GetFunctionJobTitle(), d.GetFunction().GetSubFunction(), d.GetFunction().GetMainFunction()),
+		JobFunction:      mcpkit.FirstNonEmpty(d.GetFunctionJobTitle(), d.GetFunction().GetSubFunction(), d.GetFunction().GetMainFunction()),
 		Skills:           names(d.GetSkills()),
 		Benefits:         append(names(d.GetBenefits()), names(d.GetRemoteBenefits())...),
 		Languages:        lo.Map(d.GetLanguages(), func(l *jobv3.LanguageDTO, _ int) string { return l.GetName() }),
@@ -198,13 +188,13 @@ func profile(p *jobseekerv3.JobseekerProfile) *openv1.Profile {
 		return nil
 	}
 	return &openv1.Profile{
-		FullName:          firstNonEmpty(p.GetFullName(), strings.TrimSpace(p.GetFirstName()+" "+p.GetLastName())),
+		FullName:          mcpkit.FirstNonEmpty(p.GetFullName(), strings.TrimSpace(p.GetFirstName()+" "+p.GetLastName())),
 		Location:          p.GetLocation(),
 		Nationality:       p.GetNationality(),
-		Summary:           firstNonEmpty(p.GetSummary(), p.GetDescription()),
+		Summary:           mcpkit.FirstNonEmpty(p.GetSummary(), p.GetDescription()),
 		YearsOfExperience: p.GetYearsOfExperience(),
 		HighestDegree:     p.GetDegreeName(),
-		NoticePeriod:      firstNonEmpty(p.GetNoticePeriod(), enumText(p.GetNoticePeriodType().String(), "NOTICE_PERIOD_")),
+		NoticePeriod:      mcpkit.FirstNonEmpty(p.GetNoticePeriod(), enumText(p.GetNoticePeriodType().String(), "NOTICE_PERIOD_")),
 		JobseekingStatus:  enumText(p.GetJobseekingStatus().String(), "JOBSEEKING_STATUS_"),
 		ExpectedSalary:    monthlySalary(p.GetExpectedSalaryFrom(), p.GetExpectedSalaryTo(), p.GetExpectedSalaryCurrency()),
 		WorkExperiences: lo.Map(p.GetWorkExperiences(), func(w *jobseekerv3.WorkExperience, _ int) *openv1.WorkExperience {
@@ -268,15 +258,6 @@ func yearMonth(s string) string {
 		return s[:7]
 	}
 	return s
-}
-
-func firstNonEmpty(values ...string) string {
-	for _, v := range values {
-		if strings.TrimSpace(v) != "" {
-			return v
-		}
-	}
-	return ""
 }
 
 func formatInt(v int64) string { return strconv.FormatInt(v, 10) }
