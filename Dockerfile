@@ -21,8 +21,8 @@ RUN apt-get update && \
 ENV TZ "Asia/Singapore"
 WORKDIR /app
 COPY --from=builder /app/main .
-COPY --from=builder /app/development_config.yaml .
 
 EXPOSE 8000
 
-CMD ["./main", "serve"]
+ENTRYPOINT ["./main", "serve"]
+CMD ["-c", "/app/config.yaml"]

@@ -1,0 +1,30 @@
+configFiles:
+  config.yaml:
+    content: |
+      key_config:
+        env: development
+        port: 8000
+        name: "bossjob-mcp-server"
+      map_config:
+        oauth:
+          issuer: "https://dev.auth.bossjob.com"
+          jobseeker_resource: "https://{{ .Environment.Values.domain }}/jobseeker/mcp"
+          jwks_refresh_interval: 1m
+          clock_skew: 30s
+        grpc:
+          job: "d-job-go.dev.svc.cluster.local:9000"
+          jobseeker: "d-jobseeker-go.dev.svc.cluster.local:9000"
+          config: "d-config-go.dev.svc.cluster.local:9000"
+          timeout: 5s
+        mcp:
+          jobseeker_path: "/jobseeker/mcp"
+          allowed_hosts: ["{{ .Environment.Values.domain }}"]
+          web_base_url: "https://demo.bossjob.com/en-us/"
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    cpu: 512m
+    memory: 1Gi

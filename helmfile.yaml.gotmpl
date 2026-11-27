@@ -1,0 +1,22 @@
+environments:
+  dev:
+    values:
+      - domain: dev.mcp.bossjob.com
+
+---
+
+repositories:
+  - name: bossjob
+    url: 172.31.2.16/helm-charts
+    oci: true
+    plainHttp: true
+
+releases:
+  - name: bossjob-mcp-server
+    namespace: {{ .Environment.Name }}
+    createNamespace: true
+    chart: bossjob/app
+    version: 0.1.0
+    values:
+      - deploy/helm-values/{{ .Environment.Name }}.yaml.gotmpl
+      - deploy/helm-values/values.yaml.gotmpl

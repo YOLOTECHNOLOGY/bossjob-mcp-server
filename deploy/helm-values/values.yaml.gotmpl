@@ -1,0 +1,42 @@
+name: bossjob-mcp-server
+
+replicas: 1
+
+image:
+  repository: {{ requiredEnv "IMAGE_REPOSITORY" | quote }}
+  tag: {{ requiredEnv "IMAGE_TAG" | quote }}
+
+service:
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000
+      protocol: TCP
+    - name: metrics
+      port: 6000
+      targetPort: 6000
+      protocol: TCP
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 8000
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 8000
+
+ingress:
+  enabled: true
+  hosts:
+    - host: {{ .Environment.Values.domain | quote }}
+      paths:
+        - path: /
+          servicePort: http
+  tls:
+    enabled: true
+
+configFiles:
+  config.yaml:
+    mountPath: /app/config.yaml
