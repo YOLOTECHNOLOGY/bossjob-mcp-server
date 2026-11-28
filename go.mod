@@ -3,7 +3,7 @@ module bossjob-mcp-server
 go 1.27
 
 require (
-	github.com/YOLOTECHNOLOGY/bossjob-api-public v0.0.0-20261125123855-25e05a0bb4a9
+	github.com/YOLOTECHNOLOGY/bossjob-api-public v0.0.0-20261128041420-43757322d781
 	github.com/YOLOTECHNOLOGY/bossjob-lib-go v1.0.140
 	github.com/bytedance/mockey v1.4.8
 	github.com/golang-jwt/jwt/v5 v5.3.1

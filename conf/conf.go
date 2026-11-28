@@ -26,6 +26,8 @@ type OAuthConfig struct {
 	JWKSURL string `yaml:"jwks_url"`
 	// JobseekerResource 求职者 MCP resource，必须与 auth-go clients[].bindings.resource 完全一致。
 	JobseekerResource string `yaml:"jobseeker_resource"`
+	// RecruiterResource 招聘者 MCP resource，必须与 auth-go clients[].bindings.resource 完全一致。
+	RecruiterResource string `yaml:"recruiter_resource"`
 	// JWKSRefreshInterval JWKS 最短刷新间隔（遇未知 kid 时也受此限制，防止被刷）。
 	JWKSRefreshInterval time.Duration `yaml:"jwks_refresh_interval"`
 	// ClockSkew 校验 exp / nbf / iat 时允许的时钟偏差。
@@ -45,6 +47,9 @@ type GRPCConfig struct {
 	Job       string `yaml:"job"`
 	Jobseeker string `yaml:"jobseeker"`
 	Config    string `yaml:"config"`
+	Recruiter string `yaml:"recruiter"`
+	Talent    string `yaml:"talent"`
+	JobApp    string `yaml:"job_app"`
 	// Timeout 单次下游调用超时。
 	Timeout time.Duration `yaml:"timeout"`
 }
@@ -53,6 +58,8 @@ type GRPCConfig struct {
 type MCPConfig struct {
 	// JobseekerPath 求职者 MCP 端点路径，需与 JobseekerResource 的 path 一致。
 	JobseekerPath string `yaml:"jobseeker_path"`
+	// RecruiterPath 招聘者 MCP 端点路径，需与 RecruiterResource 的 path 一致。
+	RecruiterPath string `yaml:"recruiter_path"`
 	// AllowedHosts DNS rebinding 防护的 Host 白名单（公网域名）。
 	AllowedHosts []string `yaml:"allowed_hosts"`
 	// WebBaseURL 职位 / 公司详情链接的站点根地址，例如 https://dev.bossjob.com。

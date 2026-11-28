@@ -24,7 +24,7 @@ import (
 func TestCI_OAuthVerifier_Verify(t *testing.T) {
 	mockey.PatchConvey("Feature: MCP 只接受本环境 auth-go 签发的求职者 Access Token", t, func() {
 		e := newEnv(t)
-		v := digutil.MustGet[oauthrs.Verifier](e.c)
+		v := digutil.MustGet[oauthrs.Verifiers](e.c).Jobseeker
 		ctx := context.Background()
 
 		mockey.PatchConvey("Scenario: 合法 Token 解析出 uid / country_id 并组装 CtxInfo", func() {

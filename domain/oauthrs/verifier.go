@@ -22,6 +22,12 @@ type Verifier interface {
 	Verify(ctx context.Context, raw string) (*Principal, error)
 }
 
+// Verifiers 每个 MCP resource 各自一个校验器：求职者端点只接受 role=jobseeker + 求职者 resource 的 Token，招聘者同理。
+type Verifiers struct {
+	Jobseeker Verifier
+	Recruiter Verifier
+}
+
 // VerifierConfig 单个 MCP resource 的校验规则。
 type VerifierConfig struct {
 	Issuer    string
