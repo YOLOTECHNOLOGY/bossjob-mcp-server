@@ -4,8 +4,8 @@ buf.build/gen/go/redpandadata/common/protocolbuffers/go v1.34.2-20240917150400-3
 buf.build/gen/go/redpandadata/common/protocolbuffers/go v1.34.2-20240917150400-3f349e63f44a.2/go.mod h1:wThyg02xJx4K/DA5fg0QlKts8XVPyTT86JC8hPfEzno=
 connectrpc.com/connect v1.21.1 h1:h2kacdlzXpZU2OQFSv98xkjYXNUSr/ptxmGVbS/+CRM=
 connectrpc.com/connect v1.21.1/go.mod h1:fhMcVJ5w6r/yTYhnkEbW6+sIF7OZ5Ay7KYgmfebh2ek=
-github.com/YOLOTECHNOLOGY/bossjob-api-public v0.0.0-20261127190820-2810ad963c96 h1:44kOpolgcHm7cvxK16Fpm4o8Jp64v6rx7essBh/i4Eo=
-github.com/YOLOTECHNOLOGY/bossjob-api-public v0.0.0-20261127190820-2810ad963c96/go.mod h1:dwkwWz/vHVNO8XlsepRM/vvDWbKx9/0bbMrAzoNAj7g=
+github.com/YOLOTECHNOLOGY/bossjob-api-public v0.0.0-20261128041420-43757322d781 h1:c181eJxyK3lCi1dykRriWJ216NiQw7bproLjRosfsj8=
+github.com/YOLOTECHNOLOGY/bossjob-api-public v0.0.0-20261128041420-43757322d781/go.mod h1:dwkwWz/vHVNO8XlsepRM/vvDWbKx9/0bbMrAzoNAj7g=
 github.com/YOLOTECHNOLOGY/bossjob-lib-go v1.0.140 h1:7TXWBTPK5UYIQ5B9+aLrrKZ4BIvCKJZyoEFNtJLWQd8=
 github.com/YOLOTECHNOLOGY/bossjob-lib-go v1.0.140/go.mod h1:zmxnaAARdIHkGop4z73vTP1PYe3xOjhYJU8tYOavNUc=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
